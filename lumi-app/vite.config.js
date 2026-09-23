@@ -8,8 +8,8 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'Raiz — Caderno digital da família',
-        short_name: 'Raiz',
+        name: 'Lumi — Caderno digital da família',
+        short_name: 'Lumi',
         description: 'Documentos, saúde e memórias da sua filha em um só lugar.',
         theme_color: '#2F6F62',
         background_color: '#F5F7F4',

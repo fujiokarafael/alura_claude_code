@@ -19,7 +19,7 @@ export default function Layout({ children }) {
   return (
     <div className="app-shell">
       <header className="topbar">
-        <Link to="/dashboard" className="brand">🌱 Raiz</Link>
+        <Link to="/dashboard" className="brand">🌱 Lumi</Link>
         {usuarioAtual && (
           <div className="usuario-atual">
             <span>{usuarioAtual.nome}</span>

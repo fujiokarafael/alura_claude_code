@@ -5,8 +5,10 @@
 export const PERMISSIONS = {
   pessoal: { responsavel: 'full', cuidador: 'none', convidado: 'none' },
   saude: { responsavel: 'full', cuidador: 'read', convidado: 'read' },
+  consultas: { responsavel: 'full', cuidador: 'read', convidado: 'read' },
   medicamentosVacinas: { responsavel: 'full', cuidador: 'partial', convidado: 'read' },
   lembretes: { responsavel: 'full', cuidador: 'full', convidado: 'none' },
+  listaCompras: { responsavel: 'full', cuidador: 'full', convidado: 'none' },
   escolarConvenio: { responsavel: 'full', cuidador: 'read', convidado: 'none' },
   configuracoes: { responsavel: 'full', cuidador: 'none', convidado: 'none' },
 }

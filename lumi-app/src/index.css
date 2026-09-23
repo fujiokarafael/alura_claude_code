@@ -56,14 +56,38 @@ button {
 }
 .persona-card span { font-size: 13px; color: var(--ink-soft); }
 
+.form-login { display: flex; flex-direction: column; gap: 10px; margin-top: 24px; text-align: left; }
+.form-login input {
+  border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font-size: 14px;
+}
+.form-login button[type="submit"] {
+  background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 10px; font-size: 14px; font-weight: 600;
+}
+.erro-login { color: #A8402A; font-size: 13px; margin: 0; }
+.link-alternar-modo { background: none; border: none; color: var(--accent); font-size: 13px; margin-top: 14px; text-decoration: underline; }
+
 .dependente-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; margin-top: 20px; }
 .dependente-card {
   background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
   padding: 16px; display: flex; flex-direction: column; gap: 6px; text-decoration: none; color: var(--ink);
+  font: inherit; text-align: left;
 }
 .dependente-card span { font-size: 13px; color: var(--ink-soft); }
 .dependente-card--novo { justify-content: center; align-items: center; color: var(--ink-soft); border-style: dashed; }
 .lembrete-count { color: var(--gold) !important; font-weight: 600; }
+
+.form-novo-dependente {
+  margin-top: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  padding: 16px; display: flex; flex-direction: column; gap: 10px; max-width: 320px;
+}
+.form-novo-dependente input {
+  border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; font-size: 14px;
+}
+.form-novo-dependente-acoes { display: flex; justify-content: flex-end; gap: 8px; }
+.form-novo-dependente-acoes button[type="submit"] { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 8px 16px; }
+.form-novo-dependente-acoes button[type="button"] { background: none; border: 1px solid var(--line); border-radius: 8px; padding: 8px 16px; color: var(--ink-soft); }
+
+.carregando { text-align: center; margin-top: 60px; color: var(--ink-soft); }
 
 .voltar { color: var(--ink-soft); text-decoration: none; font-size: 13px; }
 
@@ -81,3 +105,22 @@ button {
 .registro-lista { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 .registro-lista li { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; display: flex; flex-direction: column; gap: 2px; }
 .registro-meta { font-size: 12.5px; color: var(--ink-soft); }
+
+.botao-mock {
+  margin-top: 4px; align-self: flex-start; background: none; border: 1px dashed var(--line);
+  border-radius: 8px; padding: 8px 14px; font-size: 13px; color: var(--ink-soft);
+}
+.botao-mock:disabled { cursor: not-allowed; }
+
+.lista-compras { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.item-compra { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; }
+.item-compra label { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.item-compra--comprado label { color: var(--ink-soft); text-decoration: line-through; }
+
+.form-novo-item { display: flex; gap: 8px; margin-top: 12px; }
+.form-novo-item input {
+  flex: 1; border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; font-size: 14px;
+}
+.form-novo-item button {
+  background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 8px 16px; font-size: 14px;
+}

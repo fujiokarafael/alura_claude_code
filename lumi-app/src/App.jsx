@@ -6,7 +6,8 @@ import Dashboard from './pages/Dashboard'
 import DependenteProfile from './pages/DependenteProfile'
 
 function RotaProtegida({ children }) {
-  const { usuarioAtual } = useAuth()
+  const { usuarioAtual, carregando } = useAuth()
+  if (carregando) return <p className="carregando">Carregando...</p>
   if (!usuarioAtual) return <Navigate to="/" replace />
   return <Layout>{children}</Layout>
 }
