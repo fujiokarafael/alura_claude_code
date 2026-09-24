@@ -73,3 +73,63 @@ create policy "dependentes: editar da própria família" on dependentes
 
 -- Realtime: necessário para useDependentes.js receber INSERT/UPDATE/DELETE ao vivo.
 alter publication supabase_realtime add table dependentes;
+
+-- Fluxo de convite (README — "O que falta", item 3): o Responsável gera um
+-- código ligado à família e a um papel; a pessoa convidada usa esse código no
+-- próprio cadastro para entrar na família com o papel certo, sem poder virar
+-- responsável sozinha nem ver os códigos de outras famílias.
+
+create table if not exists convites (
+  id uuid primary key default gen_random_uuid(),
+  familia_id uuid not null references familias (id) on delete cascade,
+  papel text not null check (papel in ('cuidador', 'convidado')),
+  codigo text not null unique,
+  usado boolean not null default false,
+  criado_em timestamptz not null default now()
+);
+
+alter table convites enable row level security;
+
+-- Só o próprio Responsável da família vê/cria os convites dela — ninguém lê
+-- essa tabela diretamente para "adivinhar" um código (isso passa só pela
+-- função resgatar_convite abaixo, que não expõe a tabela inteira).
+create policy "convites: responsavel cria da propria familia" on convites
+  for insert with check (
+    familia_id = (select familia_id from usuarios where id = auth.uid())
+    and (select papel from usuarios where id = auth.uid()) = 'responsavel'
+  );
+
+create policy "convites: responsavel ve da propria familia" on convites
+  for select using (
+    familia_id = (select familia_id from usuarios where id = auth.uid())
+    and (select papel from usuarios where id = auth.uid()) = 'responsavel'
+  );
+
+-- Função especial: roda com privilégio de dono da tabela (`security definer`),
+-- então consegue validar e "gastar" um código sem que o chamador precise ter
+-- acesso de leitura à tabela convites inteira. Evita expor todos os códigos
+-- de todas as famílias para quem só deveria enxergar o seu próprio.
+create or replace function resgatar_convite(codigo_input text)
+returns table (familia_id uuid, papel text)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  convite record;
+begin
+  select c.id, c.familia_id, c.papel into convite
+  from convites c
+  where c.codigo = codigo_input and c.usado = false;
+
+  if not found then
+    raise exception 'Convite inválido ou já utilizado.';
+  end if;
+
+  update convites set usado = true where id = convite.id;
+
+  return query select convite.familia_id, convite.papel;
+end;
+$$;
+
+grant execute on function resgatar_convite(text) to authenticated;

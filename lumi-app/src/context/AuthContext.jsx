@@ -46,8 +46,8 @@ export function AuthProvider({ children }) {
   }
 
   // Primeiro acesso de uma família no modo real: cria a conta, a família e o
-  // perfil do responsável (papel inicial — convites para outros papéis são
-  // um passo futuro, ver README).
+  // perfil do responsável. Quem cria a família por aqui sempre vira
+  // responsável — outros papéis só entram por convite (cadastrarComConvite).
   async function cadastrar({ nome, email, senha, nomeFamilia }) {
     const { data, error } = await supabase.auth.signUp({ email, password: senha })
     if (error) throw error
@@ -70,6 +70,38 @@ export function AuthProvider({ children }) {
     if (erroUsuario) throw erroUsuario
   }
 
+  // Entrada de cuidador/convidado: em vez de criar uma família nova, usa um
+  // código gerado pelo responsável (ver gerarConvite) para entrar na família
+  // dele com o papel que ele escolheu.
+  async function cadastrarComConvite({ nome, email, senha, codigo }) {
+    const { data, error } = await supabase.auth.signUp({ email, password: senha })
+    if (error) throw error
+    const userId = data.user.id
+
+    const { data: resultado, error: erroConvite } = await supabase.rpc('resgatar_convite', {
+      codigo_input: codigo.trim().toUpperCase(),
+    })
+    if (erroConvite) throw erroConvite
+
+    const { familia_id: familiaId, papel } = resultado[0]
+    const { error: erroUsuario } = await supabase
+      .from('usuarios')
+      .insert({ id: userId, nome, email, papel, familia_id: familiaId })
+    if (erroUsuario) throw erroUsuario
+  }
+
+  // Responsável gera um código de uso único para convidar alguém com um
+  // papel específico (cuidador ou convidado) — ver supabase/schema.sql,
+  // função resgatar_convite, para o outro lado desse fluxo.
+  async function gerarConvite(papel) {
+    const codigo = Math.random().toString(36).slice(2, 8).toUpperCase()
+    const { error } = await supabase
+      .from('convites')
+      .insert({ familia_id: usuarioAtual.familiaId, papel, codigo })
+    if (error) throw error
+    return codigo
+  }
+
   async function entrarComEmailSenha(email, senha) {
     const { error } = await supabase.auth.signInWithPassword({ email, password: senha })
     if (error) throw error
@@ -83,7 +115,16 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider
-      value={{ usuarioAtual, carregando, entrar, cadastrar, entrarComEmailSenha, sair }}
+      value={{
+        usuarioAtual,
+        carregando,
+        entrar,
+        cadastrar,
+        cadastrarComConvite,
+        gerarConvite,
+        entrarComEmailSenha,
+        sair,
+      }}
     >
       {children}
     </AuthContext.Provider>

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useDependentes } from '../data/useDependentes'
 import { lembretes } from '../data/mockData'
+import { usePermission } from '../components/RoleGate'
 
 function idade(dataNascimento) {
   const nascimento = new Date(dataNascimento)
@@ -14,6 +15,7 @@ function idade(dataNascimento) {
 export default function Dashboard() {
   const { usuarioAtual } = useAuth()
   const { dependentes, adicionarDependente } = useDependentes(usuarioAtual?.familiaId)
+  const podeConfigurarAcesso = usePermission('configuracoes') === 'full'
 
   return (
     <div className="dashboard">
@@ -33,7 +35,49 @@ export default function Dashboard() {
         })}
       </div>
       <NovoDependente onAdicionar={adicionarDependente} />
+      {podeConfigurarAcesso && <ConvidarPessoa />}
     </div>
+  )
+}
+
+// Só o Responsável vê isto (matriz de permissões, categoria "configuracoes").
+// Gera um código de uso único ligado ao papel escolhido — ver
+// AuthContext.gerarConvite e supabase/schema.sql (tabela convites).
+function ConvidarPessoa() {
+  const { gerarConvite } = useAuth()
+  const [papel, setPapel] = useState('cuidador')
+  const [codigo, setCodigo] = useState(null)
+  const [gerando, setGerando] = useState(false)
+  const [erro, setErro] = useState(null)
+
+  async function handleGerar() {
+    setErro(null)
+    setGerando(true)
+    try {
+      setCodigo(await gerarConvite(papel))
+    } catch (err) {
+      setErro(err.message)
+    } finally {
+      setGerando(false)
+    }
+  }
+
+  return (
+    <section className="convidar-pessoa">
+      <h2>Convidar cuidador ou convidado</h2>
+      <p>Gere um código, envie por WhatsApp e a pessoa usa em "Tenho um código de convite" na tela de login.</p>
+      <div className="form-convite">
+        <select value={papel} onChange={(e) => { setPapel(e.target.value); setCodigo(null) }}>
+          <option value="cuidador">Cuidador de confiança</option>
+          <option value="convidado">Convidado profissional</option>
+        </select>
+        <button onClick={handleGerar} disabled={gerando}>
+          {gerando ? 'Gerando...' : 'Gerar código'}
+        </button>
+      </div>
+      {erro && <p className="erro-login">{erro}</p>}
+      {codigo && <p className="codigo-convite">Código: <strong>{codigo}</strong></p>}
+    </section>
   )
 }
 

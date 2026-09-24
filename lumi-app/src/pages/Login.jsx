@@ -42,10 +42,11 @@ function LoginMock() {
 
 // Modo real: e-mail/senha via Supabase Auth (ver src/supabase.js).
 function LoginSupabase() {
-  const { cadastrar, entrarComEmailSenha } = useAuth()
+  const { cadastrar, cadastrarComConvite, entrarComEmailSenha } = useAuth()
   const navigate = useNavigate()
   const [modo, setModo] = useState('entrar') // 'entrar' | 'cadastrar'
-  const [form, setForm] = useState({ nome: '', nomeFamilia: '', email: '', senha: '' })
+  const [tipoCadastro, setTipoCadastro] = useState('familia') // 'familia' | 'convite'
+  const [form, setForm] = useState({ nome: '', nomeFamilia: '', email: '', senha: '', codigo: '' })
   const [erro, setErro] = useState(null)
   const [enviando, setEnviando] = useState(false)
 
@@ -58,7 +59,9 @@ function LoginSupabase() {
     setErro(null)
     setEnviando(true)
     try {
-      if (modo === 'cadastrar') {
+      if (modo === 'cadastrar' && tipoCadastro === 'convite') {
+        await cadastrarComConvite(form)
+      } else if (modo === 'cadastrar') {
         await cadastrar(form)
       } else {
         await entrarComEmailSenha(form.email, form.senha)
@@ -75,11 +78,35 @@ function LoginSupabase() {
     <div className="login-page">
       <h1>🌱 Lumi</h1>
       <p>{modo === 'cadastrar' ? 'Crie a conta da sua família.' : 'Entre com sua conta.'}</p>
+
+      {modo === 'cadastrar' && (
+        <div className="tabs">
+          <button
+            type="button"
+            className={tipoCadastro === 'familia' ? 'tab tab--ativa' : 'tab'}
+            onClick={() => setTipoCadastro('familia')}
+          >
+            Sou responsável — criar família
+          </button>
+          <button
+            type="button"
+            className={tipoCadastro === 'convite' ? 'tab tab--ativa' : 'tab'}
+            onClick={() => setTipoCadastro('convite')}
+          >
+            Tenho um código de convite
+          </button>
+        </div>
+      )}
+
       <form className="form-login" onSubmit={handleSubmit}>
         {modo === 'cadastrar' && (
           <>
             <input placeholder="Seu nome" value={form.nome} onChange={atualizarCampo('nome')} required />
-            <input placeholder="Nome da família (ex.: Família Silva)" value={form.nomeFamilia} onChange={atualizarCampo('nomeFamilia')} required />
+            {tipoCadastro === 'familia' ? (
+              <input placeholder="Nome da família (ex.: Família Silva)" value={form.nomeFamilia} onChange={atualizarCampo('nomeFamilia')} required />
+            ) : (
+              <input placeholder="Código de convite (ex.: AB3X9K)" value={form.codigo} onChange={atualizarCampo('codigo')} required />
+            )}
           </>
         )}
         <input type="email" placeholder="E-mail" value={form.email} onChange={atualizarCampo('email')} required />

@@ -23,10 +23,13 @@ Sem um projeto Supabase configurado (veja abaixo), o app abre no **modo mock**: 
 
 Sem `.env`, nada disso aparece e o app continua no modo mock — os dois modos convivem no mesmo código (ver `src/supabase.js` e `src/data/useDependentes.js`).
 
+Se você já tinha rodado `supabase/schema.sql` antes de o fluxo de convite existir, precisa colar de novo só a parte nova (tabela `convites` e a função `resgatar_convite`, no fim do arquivo) no SQL Editor — o resto já existe e não precisa repetir.
+
 ## O que já existe
 
 - **Autenticação real** (e-mail/senha, via Supabase Auth) quando `.env` está configurado; login mock com três papéis quando não está
 - **Cadastro de dependente real**, salvo no Supabase (Postgres) com atualização em tempo real via Realtime — a família e o primeiro responsável são criados juntos no cadastro
+- **Convite de cuidador/convidado por código**: o Responsável gera um código (Dashboard → "Convidar cuidador ou convidado"), escolhendo o papel; a pessoa convidada usa esse código na tela de login ("Tenho um código de convite") pra entrar na mesma família com o papel certo — ver `AuthContext.gerarConvite`/`cadastrarComConvite` e a função `resgatar_convite` em `supabase/schema.sql`
 - Perfil do dependente com abas: dados pessoais, saúde (alergias/condições + receitas e exames anexados), consultas, medicamentos e vacinas, lembretes, lista de compras, documentos
 - Controle de acesso por papel na tela (`src/access/permissions.js`), a mesma matriz da seção 7 do PRD, com `consultas` e `listaCompras` adicionadas junto às categorias do PRD original
 - App instalável como PWA (`vite-plugin-pwa`)
@@ -39,8 +42,7 @@ As abas de saúde, consultas, medicamentos/vacinas, lembretes, lista de compras 
 
 1. Migrar `documentos`, `registrosSaude`, `consultas`, `documentosSaude`, `medicamentos`, `vacinas`, `lembretes` e `itensCompra` de `src/data/mockData.js` para tabelas do Supabase (com `dependente_id` como chave estrangeira), seguindo o padrão de `src/data/useDependentes.js`.
 2. Escrever as políticas de RLS aplicando a matriz completa de `src/access/permissions.js` por categoria — as políticas atuais (`supabase/schema.sql`) só garantem que a família é dona dos seus dados, ainda sem diferenciar responsável / cuidador / convidado.
-3. Fluxo de convite: hoje só quem cria a conta se torna responsável; falta convidar cuidadores e convidados profissionais para a mesma família com o papel certo.
-4. Upload de arquivo de verdade para o Supabase Storage (documentos, receitas, exames).
+3. Upload de arquivo de verdade para o Supabase Storage (documentos, receitas, exames).
 
 ## Estrutura
 

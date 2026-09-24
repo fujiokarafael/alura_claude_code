@@ -98,6 +98,17 @@ button {
 .aviso-somente-leitura { font-size: 13px; color: var(--gold); background: var(--gold-soft); padding: 8px 12px; border-radius: 6px; }
 .sem-acesso { color: var(--ink-soft); font-style: italic; }
 
+.convidar-pessoa {
+  margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--line); max-width: 420px;
+}
+.convidar-pessoa h2 { font-size: 16px; margin: 0 0 6px; }
+.convidar-pessoa p { font-size: 13px; color: var(--ink-soft); margin: 0 0 12px; }
+.form-convite { display: flex; gap: 8px; }
+.form-convite select { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 14px; flex: 1; }
+.form-convite button { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 8px 16px; font-size: 14px; }
+.codigo-convite { margin-top: 10px; font-size: 14px; }
+.codigo-convite strong { font-family: monospace; font-size: 16px; letter-spacing: 1px; }
+
 .dados-lista { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; }
 .dados-lista dt { color: var(--ink-soft); font-size: 13px; }
 .dados-lista dd { margin: 0; font-weight: 600; }
