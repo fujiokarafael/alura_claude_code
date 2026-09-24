@@ -23,24 +23,20 @@ Sem um projeto Supabase configurado (veja abaixo), o app abre no **modo mock**: 
 
 Sem `.env`, nada disso aparece e o app continua no modo mock — os dois modos convivem no mesmo código (ver `src/supabase.js` e `src/data/useDependentes.js`).
 
-Se você já tinha rodado `supabase/schema.sql` antes de o fluxo de convite existir, precisa colar de novo só a parte nova (tabela `convites` e a função `resgatar_convite`, no fim do arquivo) no SQL Editor — o resto já existe e não precisa repetir.
+Se você já tinha rodado `supabase/schema.sql` antes, não precisa colar o arquivo inteiro de novo — só a parte que ainda não rodou (identificável pelos comentários `-- Fluxo de convite` e `-- Fase 1` no arquivo).
 
 ## O que já existe
 
 - **Autenticação real** (e-mail/senha, via Supabase Auth) quando `.env` está configurado; login mock com três papéis quando não está
 - **Cadastro de dependente real**, salvo no Supabase (Postgres) com atualização em tempo real via Realtime — a família e o primeiro responsável são criados juntos no cadastro
 - **Convite de cuidador/convidado por código**: o Responsável gera um código (Dashboard → "Convidar cuidador ou convidado"), escolhendo o papel; a pessoa convidada usa esse código na tela de login ("Tenho um código de convite") pra entrar na mesma família com o papel certo — ver `AuthContext.gerarConvite`/`cadastrarComConvite` e a função `resgatar_convite` em `supabase/schema.sql`
-- Perfil do dependente com abas: dados pessoais, saúde (alergias/condições + receitas e exames anexados), consultas, medicamentos e vacinas, lembretes, lista de compras, documentos
+- **Perfil do dependente com dados reais do Supabase** em todas as abas (dados pessoais, saúde, consultas, medicamentos e vacinas, lembretes, lista de compras, documentos) — ver `src/data/useRegistrosDependente.js`. Só a Lista de Compras tem formulário de adicionar hoje; as outras abas ainda exibem os dados mas não têm um botão de cadastro funcional (ver "O que falta")
 - Controle de acesso por papel na tela (`src/access/permissions.js`), a mesma matriz da seção 7 do PRD, com `consultas` e `listaCompras` adicionadas junto às categorias do PRD original
 - App instalável como PWA (`vite-plugin-pwa`)
 
-## O que ainda é só mock (Fase 1 do roadmap)
+## O que falta para virar um app de verdade
 
-As abas de saúde, consultas, medicamentos/vacinas, lembretes, lista de compras e documentos ainda leem de `src/data/mockData.js` — só o cadastro do dependente (Fase 0) já é real. Migrar essas coleções para o Supabase é a Fase 1.
-
-## O que falta para virar um app de verdade (Fase 1 em diante)
-
-1. Migrar `documentos`, `registrosSaude`, `consultas`, `documentosSaude`, `medicamentos`, `vacinas`, `lembretes` e `itensCompra` de `src/data/mockData.js` para tabelas do Supabase (com `dependente_id` como chave estrangeira), seguindo o padrão de `src/data/useDependentes.js`.
+1. Formulários de cadastro para as abas que hoje só leem (saúde, consultas, medicamentos/vacinas, documentos) — os botões "+ Anexar receita", "+ Registrar consulta" etc. ainda estão desabilitados.
 2. Escrever as políticas de RLS aplicando a matriz completa de `src/access/permissions.js` por categoria — as políticas atuais (`supabase/schema.sql`) só garantem que a família é dona dos seus dados, ainda sem diferenciar responsável / cuidador / convidado.
 3. Upload de arquivo de verdade para o Supabase Storage (documentos, receitas, exames).
 
@@ -48,12 +44,14 @@ As abas de saúde, consultas, medicamentos/vacinas, lembretes, lista de compras 
 
 ```
 src/
-  access/permissions.js     matriz de permissões por papel
-  context/AuthContext.jsx   sessão atual — Supabase Auth real ou mock
-  data/useDependentes.js    lê/escreve dependentes no Supabase (ou mock, se não configurado)
-  data/mockData.js          dados de exemplo (ainda usados por todas as abas, exceto dependentes)
-  components/               Layout e RoleGate (esconde o que o papel não pode ver)
-  pages/                    Login, Dashboard, Perfil do dependente
-  supabase.js               conexão com Supabase (inativa até existir .env)
-supabase/schema.sql         tabelas e políticas de RLS da Fase 0 — colar no SQL Editor do Supabase
+  access/permissions.js         matriz de permissões por papel
+  context/AuthContext.jsx       sessão atual — Supabase Auth real ou mock; convites
+  data/useDependentes.js        lê/escreve dependentes no Supabase (ou mock, se não configurado)
+  data/criarUseColecao.js       fábrica de hooks reaproveitada pelas 8 coleções abaixo
+  data/useRegistrosDependente.js  documentos, saúde, consultas, medicamentos, vacinas, lembretes, lista de compras
+  data/mockData.js              dados de exemplo (usados só quando .env não está configurado)
+  components/                   Layout e RoleGate (esconde o que o papel não pode ver)
+  pages/                        Login, Dashboard, Perfil do dependente
+  supabase.js                   conexão com Supabase (inativa até existir .env)
+supabase/schema.sql             tabelas, políticas de RLS e funções — colar no SQL Editor do Supabase
 ```

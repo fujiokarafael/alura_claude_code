@@ -133,3 +133,142 @@ end;
 $$;
 
 grant execute on function resgatar_convite(text) to authenticated;
+
+-- Fase 1 (README — Roadmap): as coleções que ainda eram só mock em
+-- src/data/mockData.js viram tabelas de verdade, todas amarradas a um
+-- dependente (`dependente_id`). A regra de acesso é a mesma em todas: só
+-- quem é da mesma família do dependente lê/escreve — por isso, em vez de
+-- repetir a mesma condição em 24 políticas (8 tabelas × select/insert/
+-- update), criamos uma função auxiliar e reaproveitamos.
+
+create or replace function pertence_a_familia(dep_id uuid)
+returns boolean
+language sql
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from dependentes
+    where id = dep_id
+    and familia_id = (select familia_id from usuarios where id = auth.uid())
+  );
+$$;
+
+create table if not exists documentos (
+  id uuid primary key default gen_random_uuid(),
+  dependente_id uuid not null references dependentes (id) on delete cascade,
+  tipo text not null,
+  categoria text not null,
+  data_upload date,
+  criado_em timestamptz not null default now()
+);
+
+create table if not exists registros_saude (
+  id uuid primary key default gen_random_uuid(),
+  dependente_id uuid not null references dependentes (id) on delete cascade,
+  tipo text not null check (tipo in ('alergia', 'condicao', 'diagnostico')),
+  descricao text not null,
+  data date,
+  profissional text,
+  criado_em timestamptz not null default now()
+);
+
+create table if not exists consultas (
+  id uuid primary key default gen_random_uuid(),
+  dependente_id uuid not null references dependentes (id) on delete cascade,
+  data date,
+  profissional text,
+  especialidade text,
+  motivo text,
+  observacoes text,
+  criado_em timestamptz not null default now()
+);
+
+create table if not exists documentos_saude (
+  id uuid primary key default gen_random_uuid(),
+  dependente_id uuid not null references dependentes (id) on delete cascade,
+  consulta_id uuid references consultas (id) on delete set null,
+  tipo text check (tipo in ('receita', 'exame')),
+  descricao text,
+  data_upload date,
+  criado_em timestamptz not null default now()
+);
+
+create table if not exists medicamentos (
+  id uuid primary key default gen_random_uuid(),
+  dependente_id uuid not null references dependentes (id) on delete cascade,
+  nome text not null,
+  dosagem text,
+  horarios text[],
+  ativo boolean not null default true,
+  criado_em timestamptz not null default now()
+);
+
+create table if not exists vacinas (
+  id uuid primary key default gen_random_uuid(),
+  dependente_id uuid not null references dependentes (id) on delete cascade,
+  nome text not null,
+  dose text,
+  data_aplicacao date,
+  proxima_dose_prevista date,
+  criado_em timestamptz not null default now()
+);
+
+create table if not exists lembretes (
+  id uuid primary key default gen_random_uuid(),
+  dependente_id uuid not null references dependentes (id) on delete cascade,
+  tipo text,
+  referencia text,
+  data_alvo date,
+  status text not null default 'pendente' check (status in ('pendente', 'concluido')),
+  criado_em timestamptz not null default now()
+);
+
+create table if not exists itens_compra (
+  id uuid primary key default gen_random_uuid(),
+  dependente_id uuid not null references dependentes (id) on delete cascade,
+  nome text not null,
+  comprado boolean not null default false,
+  criado_em timestamptz not null default now()
+);
+
+alter table documentos enable row level security;
+alter table registros_saude enable row level security;
+alter table consultas enable row level security;
+alter table documentos_saude enable row level security;
+alter table medicamentos enable row level security;
+alter table vacinas enable row level security;
+alter table lembretes enable row level security;
+alter table itens_compra enable row level security;
+
+-- `for all` cobre select/insert/update/delete numa policy só — `using`
+-- vale pra ler/apagar/editar uma linha existente, `with check` vale pra
+-- criar/editar validando o valor novo. Como as duas condições são iguais
+-- aqui, dá pra escrever uma vez só e reaproveitar em todas as tabelas.
+create policy "documentos: acesso da propria familia" on documentos
+  for all using (pertence_a_familia(dependente_id)) with check (pertence_a_familia(dependente_id));
+
+create policy "registros_saude: acesso da propria familia" on registros_saude
+  for all using (pertence_a_familia(dependente_id)) with check (pertence_a_familia(dependente_id));
+
+create policy "consultas: acesso da propria familia" on consultas
+  for all using (pertence_a_familia(dependente_id)) with check (pertence_a_familia(dependente_id));
+
+create policy "documentos_saude: acesso da propria familia" on documentos_saude
+  for all using (pertence_a_familia(dependente_id)) with check (pertence_a_familia(dependente_id));
+
+create policy "medicamentos: acesso da propria familia" on medicamentos
+  for all using (pertence_a_familia(dependente_id)) with check (pertence_a_familia(dependente_id));
+
+create policy "vacinas: acesso da propria familia" on vacinas
+  for all using (pertence_a_familia(dependente_id)) with check (pertence_a_familia(dependente_id));
+
+create policy "lembretes: acesso da propria familia" on lembretes
+  for all using (pertence_a_familia(dependente_id)) with check (pertence_a_familia(dependente_id));
+
+create policy "itens_compra: acesso da propria familia" on itens_compra
+  for all using (pertence_a_familia(dependente_id)) with check (pertence_a_familia(dependente_id));
+
+alter publication supabase_realtime add table
+  documentos, registros_saude, consultas, documentos_saude,
+  medicamentos, vacinas, lembretes, itens_compra;

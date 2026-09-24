@@ -4,15 +4,15 @@ import RoleGate, { usePermission } from '../components/RoleGate'
 import { useAuth } from '../context/AuthContext'
 import { useDependentes } from '../data/useDependentes'
 import {
-  documentos,
-  registrosSaude,
-  documentosSaude,
-  consultas,
-  medicamentos,
-  vacinas,
-  lembretes,
-  itensCompra,
-} from '../data/mockData'
+  useDocumentos,
+  useRegistrosSaude,
+  useDocumentosSaude,
+  useConsultas,
+  useMedicamentos,
+  useVacinas,
+  useLembretes,
+  useItensCompra,
+} from '../data/useRegistrosDependente'
 
 const ABAS = [
   { id: 'pessoal', titulo: 'Dados pessoais' },
@@ -33,6 +33,14 @@ export default function DependenteProfile() {
   const { dependentes } = useDependentes(usuarioAtual?.familiaId)
   const dependente = dependentes.find((d) => d.id === id)
   const nivelAbaAtiva = usePermission(abaAtiva)
+
+  const { itens: registrosSaude } = useRegistrosSaude(id)
+  const { itens: documentosSaude } = useDocumentosSaude(id)
+  const { itens: consultas } = useConsultas(id)
+  const { itens: medicamentos } = useMedicamentos(id)
+  const { itens: vacinas } = useVacinas(id)
+  const { itens: lembretes } = useLembretes(id)
+  const { itens: documentos } = useDocumentos(id)
 
   if (!dependente) return <p>Dependente não encontrado.</p>
 
@@ -72,7 +80,7 @@ export default function DependenteProfile() {
           <RoleGate categoria="saude">
             <h3>Alergias e condições</h3>
             <ul className="registro-lista">
-              {registrosSaude.filter((r) => r.dependenteId === id).map((r) => (
+              {registrosSaude.map((r) => (
                 <li key={r.id}>
                   <strong>{r.tipo === 'alergia' ? 'Alergia' : 'Condição'}</strong> — {r.descricao}
                   <span className="registro-meta">{r.data} · {r.profissional}</span>
@@ -82,7 +90,7 @@ export default function DependenteProfile() {
 
             <h3>Receitas e exames</h3>
             <ul className="registro-lista">
-              {documentosSaude.filter((doc) => doc.dependenteId === id).map((doc) => (
+              {documentosSaude.map((doc) => (
                 <li key={doc.id}>
                   <strong>{TIPO_DOCUMENTO_SAUDE[doc.tipo]}</strong> — {doc.descricao}
                   <span className="registro-meta">Anexado em {doc.dataUpload}</span>
@@ -96,7 +104,7 @@ export default function DependenteProfile() {
         {abaAtiva === 'consultas' && (
           <RoleGate categoria="consultas">
             <ul className="registro-lista">
-              {consultas.filter((c) => c.dependenteId === id).map((c) => (
+              {consultas.map((c) => (
                 <li key={c.id}>
                   <strong>{c.especialidade}</strong> — {c.motivo}
                   <span className="registro-meta">{c.data} · {c.profissional}</span>
@@ -112,7 +120,7 @@ export default function DependenteProfile() {
           <RoleGate categoria="medicamentosVacinas">
             <h3>Medicamentos em uso</h3>
             <ul className="registro-lista">
-              {medicamentos.filter((m) => m.dependenteId === id && m.ativo).map((m) => (
+              {medicamentos.filter((m) => m.ativo).map((m) => (
                 <li key={m.id}>
                   <strong>{m.nome}</strong> — {m.dosagem}
                   <span className="registro-meta">Horário: {m.horarios.join(', ')}</span>
@@ -121,7 +129,7 @@ export default function DependenteProfile() {
             </ul>
             <h3>Vacinas</h3>
             <ul className="registro-lista">
-              {vacinas.filter((v) => v.dependenteId === id).map((v) => (
+              {vacinas.map((v) => (
                 <li key={v.id}>
                   <strong>{v.nome}</strong> — {v.dose}
                   <span className="registro-meta">
@@ -137,7 +145,7 @@ export default function DependenteProfile() {
         {abaAtiva === 'lembretes' && (
           <RoleGate categoria="lembretes">
             <ul className="registro-lista">
-              {lembretes.filter((l) => l.dependenteId === id).map((l) => (
+              {lembretes.map((l) => (
                 <li key={l.id}>
                   <strong>{l.referencia}</strong>
                   <span className="registro-meta">{l.dataAlvo} · {l.status}</span>
@@ -156,7 +164,7 @@ export default function DependenteProfile() {
         {abaAtiva === 'escolarConvenio' && (
           <RoleGate categoria="escolarConvenio">
             <ul className="registro-lista">
-              {documentos.filter((doc) => doc.dependenteId === id).map((doc) => (
+              {documentos.map((doc) => (
                 <li key={doc.id}>
                   <strong>{doc.tipo}</strong>
                   <span className="registro-meta">Categoria: {doc.categoria} · Enviado em {doc.dataUpload}</span>
@@ -170,21 +178,19 @@ export default function DependenteProfile() {
   )
 }
 
-// Lista de compras é o único item de estado local do protótipo: marcar como
-// comprado e adicionar item não precisam de Supabase para fazer sentido na demo.
 function ListaCompras({ dependenteId }) {
-  const [itens, setItens] = useState(() => itensCompra.filter((item) => item.dependenteId === dependenteId))
+  const { itens, adicionar, atualizar } = useItensCompra(dependenteId)
   const [novoItem, setNovoItem] = useState('')
 
-  function alternarComprado(itemId) {
-    setItens((atual) => atual.map((item) => (item.id === itemId ? { ...item, comprado: !item.comprado } : item)))
+  function alternarComprado(item) {
+    atualizar(item.id, { comprado: !item.comprado })
   }
 
-  function adicionarItem(e) {
+  async function adicionarItem(e) {
     e.preventDefault()
     const nome = novoItem.trim()
     if (!nome) return
-    setItens((atual) => [...atual, { id: `ic-${Date.now()}`, dependenteId, nome, comprado: false }])
+    await adicionar({ nome, comprado: false })
     setNovoItem('')
   }
 
@@ -194,7 +200,7 @@ function ListaCompras({ dependenteId }) {
         {itens.map((item) => (
           <li key={item.id} className={item.comprado ? 'item-compra item-compra--comprado' : 'item-compra'}>
             <label>
-              <input type="checkbox" checked={item.comprado} onChange={() => alternarComprado(item.id)} />
+              <input type="checkbox" checked={item.comprado} onChange={() => alternarComprado(item)} />
               {item.nome}
             </label>
           </li>
